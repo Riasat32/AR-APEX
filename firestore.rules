@@ -1,0 +1,89 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'anonymous');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'admin@arstore.com' ||
+        request.auth.token.email == 'riasatkhan032@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Apps Collection: Anyone can read; Only Admin can create, update, or delete
+    match /apps/{appId} {
+      allow get, list: if true;
+
+      allow create: if isAdmin() &&
+        request.resource.data.name is string && request.resource.data.name.size() <= 100 &&
+        request.resource.data.description is string && request.resource.data.description.size() <= 5000 &&
+        request.resource.data.category is string && request.resource.data.category.size() <= 50 &&
+        request.resource.data.version is string && request.resource.data.version.size() <= 20 &&
+        request.resource.data.size is string && request.resource.data.size.size() <= 20;
+
+      allow update: if (isAdmin()) || (
+        // Allow public download counter increment
+        isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloads']) &&
+        request.resource.data.downloads == resource.data.downloads + 1
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Reviews Collection: Anyone can read; Authenticated users can create/update their own; Admin can delete
+    match /reviews/{reviewId} {
+      allow get, list: if true;
+
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
+        request.resource.data.comment is string && request.resource.data.comment.size() <= 2000;
+
+      allow update: if isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'comment', 'helpfulCount']) &&
+        request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
+
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // Users Collection: Users can read/write only their own document; Admins can read
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if isOwner(userId) &&
+        request.resource.data.uid == request.auth.uid &&
+        (request.resource.data.role == 'user' || isAdmin());
+
+      allow update: if isOwner(userId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloadsHistory', 'displayName', 'photoUrl']) &&
+        request.resource.data.uid == resource.data.uid;
+
+      allow delete: if isAdmin();
+    }
+  }
+}

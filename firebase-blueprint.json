@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User account profile and downloaded apps history",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoUrl": { "type": "string", "maxLength": 512 },
+        "downloadsHistory": { "type": "array", "description": "Array of app IDs downloaded by the user" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "AppItem": {
+      "title": "AppItem",
+      "description": "Store application or game listing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "category": { "type": "string", "maxLength": 50 },
+        "version": { "type": "string", "maxLength": 20 },
+        "size": { "type": "string", "maxLength": 20 },
+        "developer": { "type": "string", "maxLength": 100 },
+        "iconUrl": { "type": "string", "maxLength": 1024 },
+        "apkUrl": { "type": "string", "maxLength": 1024 },
+        "screenshots": { "type": "array", "description": "List of screenshot image URLs" },
+        "downloads": { "type": "number" },
+        "rating": { "type": "number" },
+        "ratingCount": { "type": "number" },
+        "whatsNew": { "type": "string", "maxLength": 2000 },
+        "featured": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "description", "category", "version", "size", "iconUrl"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "User review and rating for an app",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "appId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "userAvatar": { "type": "string", "maxLength": 512 },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "maxLength": 2000 },
+        "helpfulCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["appId", "userId", "userName", "rating", "comment"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User account documents containing role and download history"
+    },
+    "/apps/{appId}": {
+      "schema": "AppItem",
+      "description": "Published applications and games directory"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "User reviews and star ratings per app"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "AR-STORE",
+  "description": "A next-generation Google Play style application marketplace and developer publishing console for Android APKs, featuring clean slate defaults and custom package management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
